@@ -28,6 +28,7 @@ app.get('/', (request, response) => {
 // Route Definitions
 app.get('/location', locationHandler);
 app.get('/weather', weatherHandler);
+app.get(`/trails`, trailsHandler);
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
@@ -97,37 +98,33 @@ function Weather(day) {
   this.forecast = day.weather.description;
   this.time = new Date(day.valid_date).toString().slice(0, 15);
 }
-// function trailHandler(request, response) {
-//   superagent(
-//     `https://www.hikingproject.com/data/get-trails?lat=40.0274&lon=-105.2519&maxDistance=10&key=${process.env.TRAIL_API_KEY}`
-//   )
-//     .then((road) => {
-//       const geoData = road.body;
-//       const locationData = new Location(city, geoData);
-//       response.status(200).json(locationData);
+function trailsHandler(request, response) {
+  const lat = request.query.latitude; const lon = request.query.longitude; getTrailData(lat, lon).then((trailData) => response.status(200).json(trailData)); }
+function getTrailData(lat, lon) {
+  const url = `https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=500&key=${process.env.TRAIL_API_KEY}`;
+  return superagent.get(url).then((trailData) =>
+  { let trailsSummaries = trailData.body.trails.map((val) => { return new Trails(val); });
+    return trailsSummaries; }); }
 
-//     });
-// [
-//     {
-//       "name": "Rattlesnake Ledge",
-//       "location": "Riverbend, Washington",
-//       "length": "4.3",
-//       "stars": "4.4",
-//       "star_votes": "84",
-//       "summary": "An extremely popular out-and-back hike to the viewpoint on Rattlesnake Ledge.",
-//       "trail_url": "https://www.hikingproject.com/trail/7021679/rattlesnake-ledge",
-//       "conditions": "Dry: The trail is clearly marked and well maintained.",
-//       "condition_date": "2018-07-21",
-//       "condition_time": "0:00:00 "
-//     },
+function Trails(go) {
+  this.name = go.name;
+  this.location = go.location;
+  this.length = go.length;
+  this.stars = go.stars;
+  this.starVotes = go.starVotes;
+  this.summary = go.summary;
+  this.trail_url = go.url;
+  this.conditions = go.conditionDetails;
+  this.condition_date = go.conditionDate.substring(0, 11);
+  this.condition_time = go.conditionDate.substring(11);
 
-// }
-// function Trail(go){
-//  this.name=go.
-// }
+}
+
 
 app.get('/add', (req, res) => {
   locationHandler();
+  weatherHandler();
+  trailsHandler();
   let search_query = req.query.search_query;
   let formatted_query = req.query.formatted_query;
   let latitude = req.query.latitude;
